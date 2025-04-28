@@ -147,6 +147,7 @@ setup_cron() {
     echo "Pilih Mode AutoBackup:"
     echo "1. Tiap 1 Menit"
     echo "2. Tiap 5 Jam"
+    echo "3. Tiap 12 Jam"
     echo ""
     read -p "Pilih [1/2]: " cronChoice
 
@@ -158,6 +159,9 @@ setup_cron() {
             ;;
         2)
             echo "0 */5 * * * root /bin/bash $SCRIPT_PATH autobackup" >> /etc/crontab
+            ;;
+        3)
+            echo "0 */12 * * * root /bin/bash $SCRIPT_PATH autobackup" >> /etc/crontab
             ;;
         *)
             echo "Pilihan salah."
