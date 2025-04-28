@@ -1,0 +1,243 @@
+#!/bin/bash
+
+# ================================
+# Backup Bot Script with systemd
+# ================================
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
+
+# Variables
+MYIP=$(curl -sS ipv4.icanhazip.com)
+IP=$(wget -qO- icanhazip.com)
+DATE=$(date +"%Y-%m-%d")
+SCRIPT_PATH=$(realpath "$0")
+SCRIPT_NAME=$(basename "$SCRIPT_PATH")
+LOG_FILE="/var/log/backup-bot.log"
+SERVICE_PATH="/etc/systemd/system/backup-bot.service"
+
+# Add execute permission to the script
+chmod +x "$SCRIPT_PATH"
+
+# Functions
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+    echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') $1" >> $LOG_FILE
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+    echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') $1" >> $LOG_FILE
+}
+
+# Cek folder backup
+cek_folder() {
+    [[ ! -d /root/backup ]] && mkdir -p /root/backup
+}
+
+# Setup Bot Telegram
+setup_bot() {
+    echo "Pergi ke @BotFather untuk membuat bot baru."
+    echo "Pergi ke @MissRose_bot untuk mendapatkan ID Telegram."
+    echo ""
+    read -p "Masukkan Bot Token : " getToken
+    read -p "Masukkan Admin ID  : " adminID
+    echo "$getToken" > /root/.bckupbot
+    echo "$adminID" >> /root/.bckupbot
+    echo "switch off" >> /root/.bckupbot
+    log_info "Setup Bot selesai"
+    read -n 1 -s -r -p "Tekan apapun untuk kembali ke menu..."
+    botbckpBot_menu
+}
+
+# Backup Bot
+botBackup() {
+    cek_folder
+    bottoken=$(sed -n '1p' /root/.bckupbot)
+    adminid=$(sed -n '2p' /root/.bckupbot)
+    name=$(curl -s https://raw.githubusercontent.com/kyt-team/Backenv4/main/ip | grep $MYIP | awk '{print $2}')
+
+    echo ""
+    echo "[INFO] Membuat password backup..."
+    read -t 10 -p "Password backup (default pakyavpnxbackdoor): " InputPass
+    [[ -z $InputPass ]] && InputPass="pakyavpnxbackdoor"
+
+    log_info "Backup data VPS..."
+
+    cek_folder
+
+    cp /etc/passwd backup/ 2>/dev/null
+    cp /etc/group backup/ 2>/dev/null
+    cp /etc/shadow backup/ 2>/dev/null
+    cp /etc/gshadow backup/ 2>/dev/null
+    cp -r /etc/kyt/limit backup/limit 2>/dev/null
+    cp -r /etc/vmess backup/vmess 2>/dev/null
+    cp -r /etc/vless backup/vless 2>/dev/null
+    cp -r /etc/trojan backup/trojan 2>/dev/null
+    cp -r /etc/shadowsock backup/shadowsock 2>/dev/null
+    cp -r /var/lib/kyt backup/kyt 2>/dev/null
+    cp -r /etc/xray backup/xray 2>/dev/null
+    cp -r /var/www/html backup/html 2>/dev/null
+
+    cd /root
+    ZIP_FILE="$IP-$name-$DATE.zip"
+    zip -rP "$InputPass" "$ZIP_FILE" backup >/dev/null 2>&1
+
+    log_info "Mengirim backup ke Telegram..."
+    curl -s -F document=@"$ZIP_FILE" "https://api.telegram.org/bot${bottoken}/sendDocument?chat_id=${adminid}&caption=Backup $DATE" >/dev/null
+
+    rm -rf /root/backup
+    rm -f "/root/$ZIP_FILE"
+
+    log_info "Backup selesai."
+    sleep 1
+    botbckpBot_menu
+}
+
+# Restore Bot
+restoreBot() {
+    bottoken=$(sed -n '1p' /root/.bckupbot)
+
+    read -p "Masukkan File ID  : " fileId
+    read -p "Masukkan File PATH : " filePath
+    read -p "Masukkan Password  : " InputPass
+
+    log_info "Mendownload file backup..."
+    curl -s "https://api.telegram.org/file/bot${bottoken}/${filePath}?file_id=${fileId}" -o /root/backup.zip
+
+    unzip -P "$InputPass" /root/backup.zip -d /root/backup >/dev/null 2>&1
+
+    log_info "Restore data VPS..."
+    cp /root/backup/passwd /etc/ 2>/dev/null
+    cp /root/backup/group /etc/ 2>/dev/null
+    cp /root/backup/shadow /etc/ 2>/dev/null
+    cp /root/backup/gshadow /etc/ 2>/dev/null
+    cp -r /root/backup/kyt /var/lib/ 2>/dev/null
+    cp -r /root/backup/xray /etc/ 2>/dev/null
+    cp -r /root/backup/html /var/www/ 2>/dev/null
+
+    rm -rf /root/backup
+    rm -f /root/backup.zip
+
+    log_info "Restore selesai."
+    sleep 1
+    botbckpBot_menu
+}
+
+# Setup Cron untuk AutoBackup
+setup_cron_backup() {
+    echo ""
+    echo "Pilih Mode AutoBackup:"
+    echo "1. Tiap 1 Menit"
+    echo "2. Tiap 5 Jam"
+    echo "3. Tiap Jam 23.00"
+    echo ""
+    read -p "Pilih [1/2/3]: " cronChoice
+
+    # Hapus cron lama dulu
+    sed -i "/$SCRIPT_NAME backup/d" /etc/crontab
+
+    case "$cronChoice" in
+        1)
+            echo "* * * * * root $SCRIPT_PATH backup" >> /etc/crontab
+            ;;
+        2)
+            echo "0 */5 * * * root $SCRIPT_PATH backup" >> /etc/crontab
+            ;;
+        3)
+            echo "0 23 * * * root $SCRIPT_PATH backup" >> /etc/crontab
+            ;;
+        *)
+            echo "Pilihan tidak valid!"
+            sleep 1
+            botbckpBot_menu
+            ;;
+    esac
+    service cron restart >/dev/null 2>&1
+    log_info "AutoBackup berhasil diatur."
+    sleep 1
+    botbckpBot_menu
+}
+
+# Create systemd service to run script
+create_service() {
+    echo "[Unit]
+Description=Backup Bot Script
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/bin/bash $SCRIPT_PATH backup
+Restart=on-failure
+RestartSec=5
+TimeoutSec=300
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=backup-bot
+
+[Install]
+WantedBy=multi-user.target" > $SERVICE_PATH
+
+    log_info "Service backup-bot berhasil dibuat!"
+    systemctl daemon-reload
+    systemctl enable backup-bot.service
+    systemctl start backup-bot.service
+    log_info "Backup Bot Service telah dijalankan."
+}
+
+# Menu utama
+botbckpBot_menu() {
+    clear
+    switch=$(grep -i "switch" /root/.bckupbot | awk '{print $2}')
+    [[ "${switch}" == "on" ]] && sts="\033[0;32m[ON]\033[0m" || sts="\033[1;31m[OFF]\033[0m"
+
+    echo -e " ${BLUE}╭════════════════════════════════════════════╮${NC}"
+    echo -e " ${BLUE}│$NC Telegram Bot (AutoBackup)"
+    echo -e " ${BLUE}╰════════════════════════════════════════════╯${NC}"
+    echo -e " Status AutoBackup: $sts"
+    echo -e " [1] Setup Bot Telegram"
+    echo -e " [2] Setting AutoBackup"
+    echo -e " [3] Backup Manual ke Telegram"
+    echo -e " [4] Restore Data dari Telegram"
+    echo -e " [5] Keluar"
+    echo -e " [6] Buat dan Jalankan Service"
+    echo ""
+    read -p "Pilih Menu [1-6]: " menuChoice
+
+    case "$menuChoice" in
+        1) clear; setup_bot ;;
+        2) clear; setup_cron_backup ;;
+        3) clear; botBackup ;;
+        4) clear; restoreBot ;;
+        5) exit 0 ;;
+        6) clear; create_service ;;
+        *) botbckpBot_menu ;;
+    esac
+}
+
+# Main Script Start
+clear
+if [[ ! -f /root/.bckupbot ]]; then
+    echo "Silahkan setup bot Telegram dahulu."
+    setup_bot
+fi
+
+# Cek mode jalan
+if [[ "$1" == "backup" ]]; then
+    botBackup
+    exit 0
+fi
+
+# Saat jalan manual
+echo ""
+read -t 10 -p "Backup manual sekarang? (y/n): " doBackup
+if [[ "$doBackup" == "y" ]]; then
+    botBackup
+else
+    botbckpBot_menu
+fi
