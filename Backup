@@ -52,7 +52,7 @@ bot_backup() {
 
     echo ""
     echo "Membuat password backup..."
-    InputPass="pakyavpnxbackdoor"
+    InputPass="1"
 
     # Copy data penting
     cp /etc/passwd $BACKUP_DIR/ 2>/dev/null
