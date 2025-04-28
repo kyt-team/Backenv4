@@ -176,7 +176,7 @@ setup_cron() {
 main_menu() {
     clear
     echo -e "${BLUE}╭═════════════════════════════════════╮${NC}"
-    echo -e "${BLUE}│        Backup Bot by Alvi cell         │${NC}"
+    echo -e "${BLUE}│     Backup Bot by Alvi cell         │${NC}"
     echo -e "${BLUE}╰═════════════════════════════════════╯${NC}"
     echo ""
     echo "1. Setup Bot Telegram"
