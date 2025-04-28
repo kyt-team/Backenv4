@@ -103,35 +103,44 @@ bot_backup() {
 }
 
 # Restore data
-bot_restore() {
-    bottoken=$(sed -n '1p' /root/.bckupbot)
+restoreBot() {
+    bottoken=$(sed -n '1p' /root/.bckupbot | awk '{print $1}')
+    read -p "File ID   : " fileId
+    read -p "File PATH : " filePath
+    curl -Ss --request GET \
+        --url "https://api.telegram.org/file/bot${bottoken}/${filePath}?file_id=${fileId}" >backup.zip
 
-    read -p "Masukkan File ID  : " file_id
-    read -p "Masukkan File PATH : " file_path
-    read -p "Masukkan Password  : " InputPass
-
-    log_info "Mendownload file dari Telegram..."
-
-    curl -s -o /root/backup.zip "https://api.telegram.org/file/bot${bottoken}/${file_path}"
-
-    unzip -P "$InputPass" /root/backup.zip -d /root/backup >/dev/null 2>&1
-
-    log_info "Restore data VPS..."
-
-    cp /root/backup/passwd /etc/ 2>/dev/null
-    cp /root/backup/group /etc/ 2>/dev/null
-    cp /root/backup/shadow /etc/ 2>/dev/null
-    cp /root/backup/gshadow /etc/ 2>/dev/null
-    cp -r /root/backup/xray /etc/ 2>/dev/null
-    cp -r /root/backup/html /var/www/ 2>/dev/null
-    cp -r /root/backup/kyt /var/lib/ 2>/dev/null
-
+    echo -e "[ ${green}INFO${NC} ] • Restore Data..."
+	read -rp "Password File: "  InputPass
+	echo -e "[ ${green}INFO${NC} ] • Getting your data..."
+	unzip -P $InputPass /root/backup.zip &> /dev/null
+    echo -e "[ ${green}INFO${NC} ] • Starting to restore data..."
+    rm -f /root/backup.zip &> /dev/null
+	sleep 1
+    cd /root/backup
+	echo -e "[ ${green}INFO${NC} ] • Please Wait , Restoring In Process Now... "
+	sleep 1
+	cp passwd /etc/ &>/dev/null
+	echo -e "[ ${green}INFO${NC} ] • Restoring passwd data..."
+	sleep 1
+	cp group /etc/ &>/dev/null
+	echo -e "[ ${green}INFO${NC} ] • Restoring group data..."
+	sleep 1
+	cp shadow /etc/ &>/dev/null
+	echo -e "[ ${green}INFO${NC} ] • Restoring shadow data..."
+	sleep 1
+	cp gshadow /etc/ &>/dev/null
+	echo -e "[ ${green}INFO${NC} ] • Restoring gshadow data..."
+	sleep 1
+    cp -r kyt /var/lib/ &>/dev/null
+    cp -r xray /etc/ &>/dev/null
+    cp -r html /var/www/ &>/dev/null
     rm -rf /root/backup
-    rm -f /root/backup.zip
-
-    log_info "Restore selesai!"
+    rm -f backup.zip
+    echo -e "[ ${green}INFO${NC} ] • Done Restore... "
+    read -n 1 -s -r -p "Press any key to back on menu"
+    menu
 }
-
 # Setup Auto Backup via Cron
 setup_cron() {
     echo ""
@@ -163,7 +172,7 @@ setup_cron() {
 main_menu() {
     clear
     echo -e "${BLUE}╭═════════════════════════════════════╮${NC}"
-    echo -e "${BLUE}│        Backup Bot by ChatGPT         │${NC}"
+    echo -e "${BLUE}│        Backup Bot by Alvi cell         │${NC}"
     echo -e "${BLUE}╰═════════════════════════════════════╯${NC}"
     echo ""
     echo "1. Setup Bot Telegram"
