@@ -111,4 +111,3 @@ echo -e "  ${u}└────────────────────�
 echo -e ""
 history -c
 read -p "  Press [ Enter ] to back on menu"
-m-bot
