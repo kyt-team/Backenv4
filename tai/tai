@@ -10,7 +10,7 @@ clear
 history -c 
 rm -fr xbot.sh
 rm -fr /usr/bin/kyt
-rm -fr /usr/bin/kyt.zip*
+rm -fr /usr/bin/xdbot.zip*
 #color
 NC='\e[0m'
 u="\033[1;36m"
@@ -33,8 +33,8 @@ mv bot/* /usr/bin
 chmod +x /usr/bin/*
 rm -rf bot.zip
 clear
-wget -q -O kyt.zip "${REPO}kyt.zip"
-unzip kyt.zip
+wget -q -O xdbot.zip "${REPO}xbot.zip"
+unzip xdbot.zip
 pip3 install -r kyt/requirements.txt
 
 clear
@@ -98,7 +98,7 @@ else
 fi
 
 rm -fr /usr/bin/bot.zip
-rm -fr /usr/bin/kyt.zip
+rm -fr /usr/bin/xdbot.zip
 clear
 neofetch
 echo -e "  ${y} Your Data BOT Info"
