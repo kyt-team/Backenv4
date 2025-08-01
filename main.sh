@@ -533,13 +533,31 @@ clear
 function ins_dropbear(){
 clear
 print_install "Menginstall Dropbear"
-apt-get install dropbear -y > /dev/null 2>&1
-wget -q -O /etc/default/dropbear "${REPO}Cfg/dropbear.conf"
-chmod +x /etc/default/dropbear
+echo "=== Install Dropbear ==="
+# install dropbear
+apt -y install dropbear
+
+# generate semua jenis hostkey jika belum ada
+mkdir -p /etc/dropbear
+[ ! -f /etc/dropbear/dropbear_rsa_host_key ] && dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
+[ ! -f /etc/dropbear/dropbear_dss_host_key ] && dropbearkey -t dss -f /etc/dropbear/dropbear_dss_host_key
+[ ! -f /etc/dropbear/dropbear_ecdsa_host_key ] && dropbearkey -t ecdsa -f /etc/dropbear/dropbear_ecdsa_host_key
+
+chmod 600 /etc/dropbear/dropbear_*
+
+wget -q -O /etc/default/dropbear "${REPO}limit/dropbear.conf"
+echo "/bin/false" >> /etc/shells
+echo "/usr/sbin/nologin" >> /etc/shells
+/etc/init.d/ssh restart
 /etc/init.d/dropbear restart
-/etc/init.d/dropbear status
+
+wget -q -O dropbear_2019 "https://github.com/goldax7/os/raw/main/dropbear_v2019.78"
+chmod 700 dropbear_2019
+mv dropbear_2019 /usr/sbin/dropbear
+/etc/init.d/dropbear restart
 print_success "Dropbear"
 }
+
 clear
 function ins_vnstat(){
 clear
