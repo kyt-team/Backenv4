@@ -13,7 +13,7 @@ CF_ID=Alvibackup9@gmail.com
 set -euo pipefail
 IP=$(wget -qO- icanhazip.com)
 echo "Updating DNS for ${dns}..."
-DOMAIN=mazfarukstore.my.id
+DOMAIN=alvicell.my.id
 ZONE=$(curl -sLX GET "https://api.cloudflare.com/client/v4/zones?name=${DOMAIN}&status=active" \
      -H "X-Auth-Email: ${CF_ID}" \
      -H "X-Auth-Key: ${CF_KEY}" \
