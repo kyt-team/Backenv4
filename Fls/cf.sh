@@ -7,9 +7,9 @@ echo -e "\n\033[96;1m============================\033[0m"
 echo -e "\033[93;1m      GENERATE RANDOM SUBDOMAIN\033[0m"
 echo -e "\033[96;1m============================\033[0m\n"
 sub=$(head /dev/urandom | tr -dc a-z0-9 | head -c 5)
-dns=${sub}.mazfarukstore.my.id
-CF_KEY=6ba801b18626b20b87f39eb0331c8fdd1150e
-CF_ID=santremuhammadfaruk@gmail.com
+dns=${sub}.alvicell.my.id
+CF_KEY=3f47bac0cfac6554c619bb734fd79a70cdaf2
+CF_ID=Alvibackup9@gmail.com
 set -euo pipefail
 IP=$(wget -qO- icanhazip.com)
 echo "Updating DNS for ${dns}..."
