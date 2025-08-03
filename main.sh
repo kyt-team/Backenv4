@@ -852,9 +852,7 @@ rm -rf /root/domain
 secs_to_human "$(($(date +%s) - ${start}))"
 sudo hostnamectl set-hostname $username
 clear
-apt install haproxy -y
-wget -O /etc/haproxy/haproxy.cfg "https://raw.githubusercontent.com/Andyyuda/vip/main/limit/haproxy.cfg" >/dev/null 2>&1
-  
+
 echo -e ""
 echo -e ""
 echo -e "\033[96m==========================\033[0m"
