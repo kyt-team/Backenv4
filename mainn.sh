@@ -731,6 +731,15 @@ apt autoclean -y >/dev/null 2>&1
 apt autoremove -y >/dev/null 2>&1
 print_success "ePro WebSocket Proxy"
 }
+
+function upgrade_haproxy(){
+clear
+print_install "Update HAProxy ke versi repo terbaru"
+apt-get update -y
+apt-get install --only-upgrade haproxy -y
+systemctl restart haproxy >/dev/null 2>&1 || true
+print_success "HAProxy updated"
+}
 function ins_restart(){
 clear
 print_install "Restarting  All Packet"
@@ -873,6 +882,7 @@ ins_backup
 ins_swab
 ins_Fail2ban
 ins_epro
+upgrade_haproxy
 ins_restart
 menu
 profile
@@ -891,8 +901,6 @@ rm -rf /root/domain
 secs_to_human "$(($(date +%s) - ${start}))"
 sudo hostnamectl set-hostname $username
 clear
-apt install haproxy -y
-wget -O /etc/haproxy/haproxy.cfg "https://raw.githubusercontent.com/Andyyuda/vip/main/limit/haproxy.cfg" >/dev/null 2>&1
 echo -e ""
 echo -e ""
 echo -e "\033[96m==========================\033[0m"
