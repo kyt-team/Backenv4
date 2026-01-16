@@ -552,27 +552,48 @@ function ins_dropbear(){
 clear
 print_install "Menginstall Dropbear"
 echo "=== Install Dropbear ==="
-# install dropbear
+# install dropbear + dropbear 2019 build
 apt -y install dropbear
+wget -q -O /tmp/install_dropbear_2019.sh "https://raw.githubusercontent.com/kyt-team/premium/main/install_dropbear_2019.sh"
+chmod +x /tmp/install_dropbear_2019.sh
+/tmp/install_dropbear_2019.sh
 
 # generate semua jenis hostkey jika belum ada
 mkdir -p /etc/dropbear
 [ ! -f /etc/dropbear/dropbear_rsa_host_key ] && dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
 [ ! -f /etc/dropbear/dropbear_dss_host_key ] && dropbearkey -t dss -f /etc/dropbear/dropbear_dss_host_key
 [ ! -f /etc/dropbear/dropbear_ecdsa_host_key ] && dropbearkey -t ecdsa -f /etc/dropbear/dropbear_ecdsa_host_key
-
 chmod 600 /etc/dropbear/dropbear_*
 
-wget -q -O /etc/default/dropbear "${REPO}limit/dropbear.conf"
-echo "/bin/false" >> /etc/shells
-echo "/usr/sbin/nologin" >> /etc/shells
-/etc/init.d/ssh restart
-/etc/init.d/dropbear restart
+# set default konfigurasi sesuai request
+cat >/etc/default/dropbear <<'EOF'
+NO_START=0
+DROPBEAR_PORT=443
+DROPBEAR_EXTRA_ARGS="-p 109 -p 143"
+DROPBEAR_BANNER=""
+EOF
+grep -qxF "/bin/false" /etc/shells || echo "/bin/false" >> /etc/shells
+grep -qxF "/usr/sbin/nologin" /etc/shells || echo "/usr/sbin/nologin" >> /etc/shells
 
-wget -q -O dropbear_2019 "https://github.com/goldax7/os/raw/main/dropbear_v2019.78"
-chmod 700 dropbear_2019
-mv dropbear_2019 /usr/sbin/dropbear
-/etc/init.d/dropbear restart
+# systemd unit override sesuai port dan banner
+cat >/lib/systemd/system/dropbear.service <<'EOF'
+[Unit]
+Description=Dropbear SSH daemon
+Documentation=man:dropbear(8)
+After=network.target sshd-keygen.service
+
+[Service]
+ExecStart=/usr/sbin/dropbear -EF -p 443 -p 109 -p 143 -W 65536 -b /etc/issue.net
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+/etc/init.d/ssh restart
+systemctl daemon-reload
+systemctl enable dropbear
+systemctl restart dropbear
 print_success "Dropbear"
 }
 
